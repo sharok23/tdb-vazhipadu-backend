@@ -3,7 +3,7 @@ package com.tdb.vazhipadu.exception;
 import org.springframework.http.HttpStatus;
 
 public abstract sealed class ApiException extends RuntimeException
-        permits NotFoundException, ConflictException, BadRequestException {
+        permits NotFoundException, ConflictException, BadRequestException, UnprocessableEntityException {
 
     private final HttpStatus status;
 

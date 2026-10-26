@@ -151,7 +151,7 @@ curl -X POST http://localhost:8080/api/temples/1/orders   -H "Content-Type: appl
 | Phone | 10-digit Indian mobile number starting with 6–9 |
 | Nakshatra | One of the 27 birth stars, for example `ASHWATHI`, `ROHINI`, `REVATHI` (see `constant/Nakshatra.java`) |
 | Offering name | Unique per temple, ignoring case; a duplicate returns 409 |
-| Limits | Price up to 8 digits with 2 decimals; quantity 1–100; up to 20 lines per order |
+| Limits | Price up to 999999.99 (2 decimals); quantity 1–100; up to 20 lines per order |
 
 ## Error format
 

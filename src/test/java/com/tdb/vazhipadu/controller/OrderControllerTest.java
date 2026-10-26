@@ -169,4 +169,11 @@ class OrderControllerTest {
     private static LocalDate tomorrow() {
         return today().plusDays(1);
     }
+
+    @Test
+    void getOrderReturns400ForNonNumericId() throws Exception {
+        mockMvc.perform(get("/api/orders/abc"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("Invalid value 'abc' for parameter 'orderId'"));
+    }
 }

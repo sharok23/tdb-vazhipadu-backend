@@ -10,6 +10,6 @@ import jakarta.validation.constraints.Size;
 
 public record OfferingRequest(
         @NotBlank @Size(max = 100) String name,
-        @NotNull @DecimalMin("0.01") @Digits(integer = 8, fraction = 2) BigDecimal price,
+        @NotNull @DecimalMin("0.01") @Digits(integer = 6, fraction = 2) BigDecimal price,
         @NotNull Boolean active) {
 }

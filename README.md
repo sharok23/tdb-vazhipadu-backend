@@ -121,10 +121,10 @@ A sample temple with id `1` is created by the first migration, so you can call t
 
 | Method | Path | Description | Success | Errors |
 |---|---|---|---|---|
-| POST | `/api/temples/{templeId}/offerings` | Add an offering (name, price, active) | 201 | 400, 404, 409 |
+| POST | `/api/temples/{templeId}/offerings` | Add an offering (name, price, active, optional daily limit) | 201 | 400, 404, 409 |
 | GET | `/api/temples/{templeId}/offerings` | List a temple's offerings, including inactive ones | 200 | 404 |
 | PUT | `/api/temples/{templeId}/offerings/{offeringId}` | Update an offering | 200 | 400, 404, 409 |
-| POST | `/api/temples/{templeId}/orders` | Place an order; the server calculates the total | 201 | 400, 404, 422 |
+| POST | `/api/temples/{templeId}/orders` | Place an order; the server calculates the total | 201 | 400, 404, 409, 422 |
 | GET | `/api/temples/{templeId}/orders` | Search orders in pages (see below) | 200 | 400, 404 |
 | GET | `/api/orders/{orderId}` | Get an order by id | 200 | 404 |
 
@@ -162,6 +162,8 @@ curl -X POST http://localhost:8080/api/temples/1/orders   -H "Content-Type: appl
 | Order total | Calculated on the server as the sum of price × quantity; any total sent by the client is ignored |
 | Price on the order | Each order line keeps the price at the time of booking, so later price changes don't alter old orders |
 | Inactive offering | Order rejected with 422 |
+| Daily limit | Optional `dailyLimit` on an offering (a positive number, or omit for no limit). An order that would take that offering's booked quantity for the booking date over the limit is rejected with 409, and the message says how many are left |
+| Simultaneous orders | Placing an order locks the ordered offerings' rows until it commits, so online and counter orders for the same offering are checked one at a time and the limit always holds |
 | Offering from another temple, or unknown | 404 |
 | Same offering twice in one order | 400; send one line with a higher quantity instead |
 | Booking date | Today or later, in Indian Standard Time; a past date returns 400 |

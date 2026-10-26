@@ -35,4 +35,12 @@ class ApiExceptionTest {
         assertThat(ex.getStatus()).isEqualTo(HttpStatus.BAD_REQUEST);
         assertThat(ex.getMessage()).isEqualTo("bad");
     }
+
+    @Test
+    void unprocessableEntityHas422() {
+        UnprocessableEntityException ex = new UnprocessableEntityException("inactive");
+
+        assertThat(ex.getStatus()).isEqualTo(HttpStatus.UNPROCESSABLE_ENTITY);
+        assertThat(ex.getMessage()).isEqualTo("inactive");
+    }
 }

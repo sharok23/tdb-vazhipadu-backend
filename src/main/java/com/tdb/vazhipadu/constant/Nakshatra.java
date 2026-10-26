@@ -1,0 +1,31 @@
+package com.tdb.vazhipadu.constant;
+
+public enum Nakshatra {
+    ASHWATHI,
+    BHARANI,
+    KARTHIKA,
+    ROHINI,
+    MAKAYIRAM,
+    THIRUVATHIRA,
+    PUNARTHAM,
+    POOYAM,
+    AYILYAM,
+    MAKAM,
+    POORAM,
+    UTHRAM,
+    ATHAM,
+    CHITHIRA,
+    CHOTHI,
+    VISAKHAM,
+    ANIZHAM,
+    THRIKKETTA,
+    MOOLAM,
+    POORADAM,
+    UTHRADAM,
+    THIRUVONAM,
+    AVITTAM,
+    CHATHAYAM,
+    POORURUTTATHI,
+    UTHRATTATHI,
+    REVATHI
+}

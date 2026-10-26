@@ -85,7 +85,9 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(DataIntegrityViolationException.class)
-    ResponseEntity<ErrorResponse> handleDataIntegrity(HttpServletRequest req) {
+    ResponseEntity<ErrorResponse> handleDataIntegrity(DataIntegrityViolationException ex, HttpServletRequest req) {
+        log.warn("Data integrity violation on {} {}: {}", req.getMethod(), req.getRequestURI(),
+                ex.getMostSpecificCause().getMessage());
         return respond(HttpStatus.CONFLICT, "Request conflicts with existing data", req);
     }
 

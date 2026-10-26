@@ -7,6 +7,7 @@ import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.core.MethodParameter;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.mock.web.MockHttpServletRequest;
@@ -101,7 +102,8 @@ class GlobalExceptionHandlerUnitTest {
 
     @Test
     void dataIntegrityViolationReturns409() {
-        ResponseEntity<ErrorResponse> response = handler.handleDataIntegrity(request);
+        ResponseEntity<ErrorResponse> response = handler.handleDataIntegrity(
+                new DataIntegrityViolationException("duplicate"), request);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
         assertThat(response.getBody().message()).isEqualTo("Request conflicts with existing data");

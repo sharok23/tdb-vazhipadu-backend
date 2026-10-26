@@ -39,6 +39,7 @@ import com.tdb.vazhipadu.contract.response.OrderResponse;
 import com.tdb.vazhipadu.contract.response.OrderSummaryResponse;
 import com.tdb.vazhipadu.contract.response.PageResponse;
 import com.tdb.vazhipadu.exception.BadRequestException;
+import com.tdb.vazhipadu.exception.ConflictException;
 import com.tdb.vazhipadu.exception.NotFoundException;
 import com.tdb.vazhipadu.exception.UnprocessableEntityException;
 import com.tdb.vazhipadu.model.Offering;
@@ -72,7 +73,7 @@ class OrderServiceTest {
     void placeCalculatesTotalFromOfferingPrices() {
         Offering pushpanjali = offering(10L, TEMPLE_ID, "Pushpanjali", "30.00", true);
         Offering archana = offering(11L, TEMPLE_ID, "Archana", "50.00", true);
-        when(offeringRepository.findAllById(Set.of(10L, 11L))).thenReturn(List.of(pushpanjali, archana));
+        when(offeringRepository.findAllByIdForUpdate(Set.of(10L, 11L))).thenReturn(List.of(pushpanjali, archana));
         when(orderRepository.save(any(Order.class))).thenAnswer(inv -> inv.getArgument(0));
 
         OrderResponse response = orderService.place(TEMPLE_ID,
@@ -90,7 +91,7 @@ class OrderServiceTest {
 
     @Test
     void placeRejectsInactiveOffering() {
-        when(offeringRepository.findAllById(Set.of(10L)))
+        when(offeringRepository.findAllByIdForUpdate(Set.of(10L)))
                 .thenReturn(List.of(offering(10L, TEMPLE_ID, "Archana", "50.00", false)));
 
         assertThatThrownBy(() -> orderService.place(TEMPLE_ID, request(TODAY, new OrderItemRequest(10L, 1))))
@@ -101,7 +102,7 @@ class OrderServiceTest {
 
     @Test
     void placeRejectsUnknownOffering() {
-        when(offeringRepository.findAllById(Set.of(99L))).thenReturn(List.of());
+        when(offeringRepository.findAllByIdForUpdate(Set.of(99L))).thenReturn(List.of());
 
         assertThatThrownBy(() -> orderService.place(TEMPLE_ID, request(TODAY, new OrderItemRequest(99L, 1))))
                 .isInstanceOf(NotFoundException.class)
@@ -110,7 +111,7 @@ class OrderServiceTest {
 
     @Test
     void placeRejectsOfferingOfAnotherTemple() {
-        when(offeringRepository.findAllById(Set.of(10L)))
+        when(offeringRepository.findAllByIdForUpdate(Set.of(10L)))
                 .thenReturn(List.of(offering(10L, 2L, "Archana", "50.00", true)));
 
         assertThatThrownBy(() -> orderService.place(TEMPLE_ID, request(TODAY, new OrderItemRequest(10L, 1))))
@@ -185,12 +186,52 @@ class OrderServiceTest {
                 .isInstanceOf(NotFoundException.class);
     }
 
+    @Test
+    void placeRejectsOrderThatWouldExceedDailyLimit() {
+        Offering pooja = limitedOffering(12L, 5);
+        when(offeringRepository.findAllByIdForUpdate(Set.of(12L))).thenReturn(List.of(pooja));
+        when(orderRepository.sumQuantity(12L, TODAY, OrderStatus.BOOKED)).thenReturn(4L);
+
+        assertThatThrownBy(() -> orderService.place(TEMPLE_ID, request(TODAY, new OrderItemRequest(12L, 2))))
+                .isInstanceOf(ConflictException.class)
+                .hasMessage("Daily limit reached for 'Udayasthamana Pooja' on 2026-10-26: 1 of 5 left");
+        verify(orderRepository, never()).save(any());
+    }
+
+    @Test
+    void placeAcceptsOrderThatFillsDailyLimitExactly() {
+        Offering pooja = limitedOffering(12L, 5);
+        when(offeringRepository.findAllByIdForUpdate(Set.of(12L))).thenReturn(List.of(pooja));
+        when(orderRepository.sumQuantity(12L, TODAY, OrderStatus.BOOKED)).thenReturn(4L);
+        when(orderRepository.save(any(Order.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        OrderResponse response = orderService.place(TEMPLE_ID, request(TODAY, new OrderItemRequest(12L, 1)));
+
+        assertThat(response.totalAmount()).isEqualByComparingTo("100.00");
+    }
+
+    @Test
+    void placeReportsZeroLeftWhenLimitAlreadyExceeded() {
+        Offering pooja = limitedOffering(12L, 5);
+        when(offeringRepository.findAllByIdForUpdate(Set.of(12L))).thenReturn(List.of(pooja));
+        when(orderRepository.sumQuantity(12L, TODAY, OrderStatus.BOOKED)).thenReturn(6L);
+
+        assertThatThrownBy(() -> orderService.place(TEMPLE_ID, request(TODAY, new OrderItemRequest(12L, 1))))
+                .hasMessageContaining("0 of 5 left");
+    }
+
+    private static Offering limitedOffering(Long id, int dailyLimit) {
+        Offering offering = new Offering(TEMPLE_ID, "Udayasthamana Pooja", new BigDecimal("100.00"), true, dailyLimit);
+        ReflectionTestUtils.setField(offering, "id", id);
+        return offering;
+    }
+
     private static OrderRequest request(LocalDate date, OrderItemRequest... items) {
         return new OrderRequest(" Lakshmi ", "9876543210", Nakshatra.ROHINI, date, List.of(items));
     }
 
     private static Offering offering(Long id, Long templeId, String name, String price, boolean active) {
-        Offering offering = new Offering(templeId, name, new BigDecimal(price), active);
+        Offering offering = new Offering(templeId, name, new BigDecimal(price), active, null);
         ReflectionTestUtils.setField(offering, "id", id);
         return offering;
     }

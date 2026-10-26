@@ -21,6 +21,7 @@ import com.tdb.vazhipadu.contract.response.OrderResponse;
 import com.tdb.vazhipadu.contract.response.OrderSummaryResponse;
 import com.tdb.vazhipadu.contract.response.PageResponse;
 import com.tdb.vazhipadu.exception.BadRequestException;
+import com.tdb.vazhipadu.exception.ConflictException;
 import com.tdb.vazhipadu.exception.NotFoundException;
 import com.tdb.vazhipadu.exception.UnprocessableEntityException;
 import com.tdb.vazhipadu.model.Offering;
@@ -50,6 +51,8 @@ public class OrderService {
         templeGuard.requireExists(templeId);
         requireNotPast(request.bookingDate());
         Map<Long, Offering> offerings = loadBookableOfferings(templeId, request.items());
+        request.items().forEach(item ->
+                requireWithinDailyLimit(offerings.get(item.offeringId()), request.bookingDate(), item.quantity()));
 
         Order order = new Order(templeId, request.devoteeName().trim(), request.phone(), request.nakshatra(),
                 request.bookingDate(), clock.instant());
@@ -80,6 +83,18 @@ public class OrderService {
         }
     }
 
+    private void requireWithinDailyLimit(Offering offering, LocalDate bookingDate, int quantity) {
+        Integer limit = offering.getDailyLimit();
+        if (limit == null) {
+            return;
+        }
+        long booked = orderRepository.sumQuantity(offering.getId(), bookingDate, OrderStatus.BOOKED);
+        if (booked + quantity > limit) {
+            throw new ConflictException("Daily limit reached for '%s' on %s: %d of %d left"
+                    .formatted(offering.getName(), bookingDate, Math.max(0, limit - booked), limit));
+        }
+    }
+
     private Map<Long, Offering> loadBookableOfferings(Long templeId, List<OrderItemRequest> items) {
         Set<Long> ids = new HashSet<>();
         for (OrderItemRequest item : items) {
@@ -87,7 +102,7 @@ public class OrderService {
                 throw new BadRequestException("Offering %d appears more than once".formatted(item.offeringId()));
             }
         }
-        Map<Long, Offering> offerings = offeringRepository.findAllById(ids).stream()
+        Map<Long, Offering> offerings = offeringRepository.findAllByIdForUpdate(ids).stream()
                 .filter(offering -> offering.getTempleId().equals(templeId))
                 .collect(Collectors.toMap(Offering::getId, Function.identity()));
         for (Long id : ids) {

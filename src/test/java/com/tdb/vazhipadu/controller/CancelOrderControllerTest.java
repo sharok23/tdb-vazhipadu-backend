@@ -1,12 +1,21 @@
 package com.tdb.vazhipadu.controller;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -74,6 +83,28 @@ class CancelOrderControllerTest {
         mockMvc.perform(post("/api/orders/{id}/cancel", orderId)).andExpect(status().isOk());
 
         placeOrder(pooja, 5, date).andExpect(status().isCreated());
+    }
+
+    @Test
+    void simultaneousCancelsGiveOne200AndOne409() throws Exception {
+        long orderId = orderId(placeOrder(createOffering(null), 1, today()));
+        CountDownLatch start = new CountDownLatch(1);
+        Callable<Integer> cancel = () -> {
+            start.await();
+            return mockMvc.perform(post("/api/orders/{id}/cancel", orderId)).andReturn().getResponse().getStatus();
+        };
+        ExecutorService pool = Executors.newFixedThreadPool(2);
+        try {
+            List<Future<Integer>> results = List.of(pool.submit(cancel), pool.submit(cancel));
+            start.countDown();
+            List<Integer> statuses = new ArrayList<>();
+            for (Future<Integer> result : results) {
+                statuses.add(result.get(30, TimeUnit.SECONDS));
+            }
+            assertThat(statuses).containsExactlyInAnyOrder(200, 409);
+        } finally {
+            pool.shutdownNow();
+        }
     }
 
     private static LocalDate today() {

@@ -153,7 +153,7 @@ curl -X POST http://localhost:8080/api/temples/1/orders   -H "Content-Type: appl
 
 - Results are always sorted by order id, so pages never repeat or skip an order.
 - The response holds `content` (order summaries without line items), `page`, `size`, `totalElements` and `totalPages`. Use `GET /api/orders/{orderId}` for the full order.
-- Indexes on `(temple_id, booking_date, id)`, `(temple_id, phone, id)` and `(temple_id, status, id)` keep these searches off a full table scan (migration `V2`).
+- Indexes on `(temple_id, booking_date, id)`, `(temple_id, phone, id)` and `(temple_id, status, id)` keep these searches off a full table scan (migration `V2`); the unfiltered list uses the foreign-key index on `temple_id`.
 
 ### Business rules
 

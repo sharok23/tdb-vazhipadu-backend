@@ -123,7 +123,8 @@ class OrderSearchControllerTest {
     @Test
     void searchReturns400ForInvalidDate() throws Exception {
         mockMvc.perform(get(ORDERS).param("date", "26-10-2026"))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("Invalid value '26-10-2026' for parameter 'date'"));
     }
 
     @Test

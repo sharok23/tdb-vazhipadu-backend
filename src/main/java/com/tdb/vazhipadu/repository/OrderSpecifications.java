@@ -16,8 +16,9 @@ public final class OrderSpecifications {
 
     public static Specification<Order> search(Long templeId, LocalDate bookingDate, OrderStatus status,
                                               String phone) {
+        Specification<Order> ofTemple = (root, query, cb) -> cb.equal(root.get("templeId"), templeId);
         return Specification.allOf(Stream.of(
-                        equalIfPresent("templeId", templeId),
+                        ofTemple,
                         equalIfPresent("bookingDate", bookingDate),
                         equalIfPresent("status", status),
                         equalIfPresent("phone", phone))

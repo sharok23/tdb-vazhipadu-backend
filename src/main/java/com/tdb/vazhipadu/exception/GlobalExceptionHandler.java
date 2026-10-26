@@ -6,6 +6,7 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.dao.PessimisticLockingFailureException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -89,6 +90,13 @@ public class GlobalExceptionHandler {
         log.warn("Data integrity violation on {} {}: {}", req.getMethod(), req.getRequestURI(),
                 ex.getMostSpecificCause().getMessage());
         return respond(HttpStatus.CONFLICT, "Request conflicts with existing data", req);
+    }
+
+    @ExceptionHandler(PessimisticLockingFailureException.class)
+    ResponseEntity<ErrorResponse> handleLockTimeout(PessimisticLockingFailureException ex, HttpServletRequest req) {
+        log.warn("Lock not acquired on {} {}: {}", req.getMethod(), req.getRequestURI(),
+                ex.getMostSpecificCause().getMessage());
+        return respond(HttpStatus.SERVICE_UNAVAILABLE, "Offering is busy with other orders, please retry", req);
     }
 
     @ExceptionHandler(NoResourceFoundException.class)

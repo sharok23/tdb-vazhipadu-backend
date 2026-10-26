@@ -8,6 +8,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.core.MethodParameter;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.dao.PessimisticLockingFailureException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.mock.web.MockHttpServletRequest;
@@ -107,5 +108,14 @@ class GlobalExceptionHandlerUnitTest {
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
         assertThat(response.getBody().message()).isEqualTo("Request conflicts with existing data");
+    }
+
+    @Test
+    void lockTimeoutReturns503() {
+        ResponseEntity<ErrorResponse> response =
+                handler.handleLockTimeout(new PessimisticLockingFailureException("timeout"), request);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.SERVICE_UNAVAILABLE);
+        assertThat(response.getBody().message()).isEqualTo("Offering is busy with other orders, please retry");
     }
 }

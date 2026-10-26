@@ -32,7 +32,7 @@ public class OfferingService {
         if (offeringRepository.existsByTempleIdAndNameIgnoreCase(templeId, name)) {
             throw new ConflictException(DUPLICATE_NAME.formatted(name));
         }
-        Offering offering = new Offering(templeId, name, request.price(), request.active());
+        Offering offering = new Offering(templeId, name, request.price(), request.active(), request.dailyLimit());
         return OfferingResponse.from(offeringRepository.save(offering));
     }
 
@@ -50,7 +50,7 @@ public class OfferingService {
         if (offeringRepository.existsByTempleIdAndNameIgnoreCaseAndIdNot(templeId, name, offeringId)) {
             throw new ConflictException(DUPLICATE_NAME.formatted(name));
         }
-        offering.update(name, request.price(), request.active());
+        offering.update(name, request.price(), request.active(), request.dailyLimit());
         return OfferingResponse.from(offering);
     }
 }

@@ -98,4 +98,12 @@ class GlobalExceptionHandlerUnitTest {
         assertThat(response.getBody().message()).isEqualTo("Unexpected error");
         assertThat(response.getBody().fieldErrors()).isNull();
     }
+
+    @Test
+    void dataIntegrityViolationReturns409() {
+        ResponseEntity<ErrorResponse> response = handler.handleDataIntegrity(request);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+        assertThat(response.getBody().message()).isEqualTo("Request conflicts with existing data");
+    }
 }

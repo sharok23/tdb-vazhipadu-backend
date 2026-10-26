@@ -143,4 +143,34 @@ class OfferingControllerTest {
     private static String uniqueName() {
         return "Offering-" + UUID.randomUUID();
     }
+
+    @Test
+    void updateReturns409WhenRenamingToExistingName() throws Exception {
+        String taken = uniqueName();
+        createOffering(taken, "30.00", true);
+        long id = createOffering(uniqueName(), "40.00", true);
+
+        mockMvc.perform(put(OFFERINGS + "/" + id).contentType(MediaType.APPLICATION_JSON)
+                        .content(body(taken.toLowerCase(), "40.00", true)))
+                .andExpect(status().isConflict());
+    }
+
+    @Test
+    void updateReturns400ForInvalidBody() throws Exception {
+        long id = createOffering(uniqueName(), "30.00", true);
+
+        mockMvc.perform(put(OFFERINGS + "/" + id).contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\":\"\",\"price\":-1,\"active\":true}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.fieldErrors.name").exists())
+                .andExpect(jsonPath("$.fieldErrors.price").exists());
+    }
+
+    @Test
+    void createReturns400ForPriceAboveCap() throws Exception {
+        mockMvc.perform(post(OFFERINGS).contentType(MediaType.APPLICATION_JSON)
+                        .content(body(uniqueName(), "1000000.00", true)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.fieldErrors.price").exists());
+    }
 }

@@ -9,7 +9,8 @@ CREATE TABLE offering (
     name      VARCHAR(100)   NOT NULL,
     price     DECIMAL(10, 2) NOT NULL CHECK (price > 0),
     active    BOOLEAN        NOT NULL,
-    CONSTRAINT uk_offering_temple_name UNIQUE (temple_id, name)
+    name_key  VARCHAR(100)   GENERATED ALWAYS AS (LOWER(name)),
+    CONSTRAINT uk_offering_temple_name UNIQUE (temple_id, name_key)
 );
 
 CREATE TABLE orders (

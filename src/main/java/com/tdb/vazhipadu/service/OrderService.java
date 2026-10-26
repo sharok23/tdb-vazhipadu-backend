@@ -9,12 +9,17 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.tdb.vazhipadu.constant.OrderStatus;
 import com.tdb.vazhipadu.contract.request.OrderItemRequest;
 import com.tdb.vazhipadu.contract.request.OrderRequest;
 import com.tdb.vazhipadu.contract.response.OrderResponse;
+import com.tdb.vazhipadu.contract.response.OrderSummaryResponse;
+import com.tdb.vazhipadu.contract.response.PageResponse;
 import com.tdb.vazhipadu.exception.BadRequestException;
 import com.tdb.vazhipadu.exception.NotFoundException;
 import com.tdb.vazhipadu.exception.UnprocessableEntityException;
@@ -22,6 +27,7 @@ import com.tdb.vazhipadu.model.Offering;
 import com.tdb.vazhipadu.model.Order;
 import com.tdb.vazhipadu.repository.OfferingRepository;
 import com.tdb.vazhipadu.repository.OrderRepository;
+import com.tdb.vazhipadu.repository.OrderSpecifications;
 
 @Service
 public class OrderService {
@@ -56,6 +62,16 @@ public class OrderService {
         return orderRepository.findById(orderId)
                 .map(OrderResponse::from)
                 .orElseThrow(() -> NotFoundException.of("Order", orderId));
+    }
+
+    @Transactional(readOnly = true)
+    public PageResponse<OrderSummaryResponse> search(Long templeId, LocalDate bookingDate, OrderStatus status,
+                                                     String phone, int page, int size) {
+        templeGuard.requireExists(templeId);
+        PageRequest pageRequest = PageRequest.of(page, size, Sort.by("id"));
+        return PageResponse.from(
+                orderRepository.findAll(OrderSpecifications.search(templeId, bookingDate, status, phone), pageRequest),
+                OrderSummaryResponse::from);
     }
 
     private void requireNotPast(LocalDate bookingDate) {

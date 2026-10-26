@@ -125,6 +125,7 @@ A sample temple with id `1` is created by the first migration, so you can call t
 | GET | `/api/temples/{templeId}/offerings` | List a temple's offerings, including inactive ones | 200 | 404 |
 | PUT | `/api/temples/{templeId}/offerings/{offeringId}` | Update an offering | 200 | 400, 404, 409 |
 | POST | `/api/temples/{templeId}/orders` | Place an order; the server calculates the total | 201 | 400, 404, 422 |
+| GET | `/api/temples/{templeId}/orders` | Search orders in pages (see below) | 200 | 400, 404 |
 | GET | `/api/orders/{orderId}` | Get an order by id | 200 | 404 |
 
 Each PR adds its endpoints to this table and to Swagger.
@@ -137,6 +138,22 @@ curl -X POST http://localhost:8080/api/temples/1/offerings   -H "Content-Type: a
 curl -X POST http://localhost:8080/api/temples/1/orders   -H "Content-Type: application/json"   -d '{"devoteeName":"Lakshmi","phone":"9876543210","nakshatra":"ROHINI",
        "bookingDate":"2026-12-01","items":[{"offeringId":1,"quantity":2}]}'
 ```
+
+### Order search
+
+`GET /api/temples/{templeId}/orders?date=2026-12-01&status=BOOKED&phone=9876543210&page=0&size=20`
+
+| Parameter | Required | Meaning |
+|---|---|---|
+| `date` | No | Booking date, `yyyy-MM-dd` |
+| `status` | No | `BOOKED` or `CANCELLED` |
+| `phone` | No | Exact 10-digit phone number |
+| `page` | No | Page number, starting at 0 (default 0) |
+| `size` | No | Page size, 1–100 (default 20) |
+
+- Results are always sorted by order id, so pages never repeat or skip an order.
+- The response holds `content` (order summaries without line items), `page`, `size`, `totalElements` and `totalPages`. Use `GET /api/orders/{orderId}` for the full order.
+- Indexes on `(temple_id, booking_date, id)`, `(temple_id, phone, id)` and `(temple_id, status, id)` keep these searches off a full table scan (migration `V2`); the unfiltered list uses the foreign-key index on `temple_id`.
 
 ### Business rules
 
@@ -223,7 +240,7 @@ Services signal business errors by throwing a subclass of `ApiException`: `NotFo
 
 | Problem | Branch | PR |
 |---|---|---|
-| P1 – Offerings and Orders API | `feature/p1-offerings` | _pending_ |
+| P1 – Offerings and Orders API | `feature/p1-offerings` | [#5](https://github.com/sharok23/tdb-vazhipadu-backend/pull/5) |
 | P2 – Order Search | `feature/p2-order-search` | _pending_ |
 | P3 – Daily Limits | `feature/p3-daily-limits` | _pending_ |
 | P4 – Cancellation and Daily Collection | `feature/p4-cancellation-report` | _pending_ |

@@ -70,6 +70,7 @@ public class OrderController {
     @PostMapping("/orders/{orderId}/cancel")
     @Operation(summary = "Cancel an order; its quantities no longer count towards daily limits")
     @ApiResponse(responseCode = "200", description = "Order cancelled")
+    @ApiResponse(responseCode = "400", description = "Order id is not a number")
     @ApiResponse(responseCode = "404", description = "Order not found")
     @ApiResponse(responseCode = "409", description = "Order is already cancelled")
     @ApiResponse(responseCode = "503", description = "Order is busy with another request; retry")

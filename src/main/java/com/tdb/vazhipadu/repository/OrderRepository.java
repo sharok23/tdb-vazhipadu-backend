@@ -32,7 +32,7 @@ public interface OrderRepository extends JpaRepository<Order, Long>, JpaSpecific
 
     @Query("""
             select new com.tdb.vazhipadu.contract.response.OfferingCollectionResponse(
-                o.id, o.name, sum(l.quantity), count(l), sum(l.lineTotal))
+                o.id, o.name, sum(l.quantity), count(distinct ord.id), sum(l.lineTotal))
             from OrderLine l join l.order ord join Offering o on o.id = l.offeringId
             where ord.templeId = :templeId and ord.status = :status
               and ord.createdAt >= :from and ord.createdAt < :to

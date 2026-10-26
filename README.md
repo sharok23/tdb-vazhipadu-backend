@@ -71,7 +71,7 @@ Settings live in `src/main/resources/application.properties`. You can override d
 
 | Variable | Default | Purpose |
 |---|---|---|
-| `DB_URL` | `jdbc:h2:mem:vazhipadu;DB_CLOSE_DELAY=-1` | JDBC URL of the database |
+| `DB_URL` | `jdbc:h2:mem:vazhipadu;DB_CLOSE_DELAY=-1;LOCK_TIMEOUT=10000` | JDBC URL of the database |
 | `DB_USERNAME` | `sa` | Database user |
 | `DB_PASSWORD` | empty | Database password |
 
@@ -163,7 +163,8 @@ curl -X POST http://localhost:8080/api/temples/1/orders   -H "Content-Type: appl
 | Price on the order | Each order line keeps the price at the time of booking, so later price changes don't alter old orders |
 | Inactive offering | Order rejected with 422 |
 | Daily limit | Optional `dailyLimit` on an offering (a positive number, or omit for no limit). An order that would take that offering's booked quantity for the booking date over the limit is rejected with 409, and the message says how many are left |
-| Simultaneous orders | Placing an order locks the ordered offerings' rows until it commits, so online and counter orders for the same offering are checked one at a time and the limit always holds |
+| Simultaneous orders | Placing an order locks the ordered offerings' rows until it commits, so online and counter orders for the same offering are checked one at a time and the limit always holds. If a lock can't be taken within 10 seconds the order gets 503 and can be retried |
+| Updating an offering | `PUT` replaces the whole offering: leaving out `dailyLimit` removes the limit. Lowering a limit below what is already booked only affects new orders |
 | Offering from another temple, or unknown | 404 |
 | Same offering twice in one order | 400; send one line with a higher quantity instead |
 | Booking date | Today or later, in Indian Standard Time; a past date returns 400 |
@@ -211,6 +212,7 @@ All errors, including validation errors, unknown URLs and server errors, return 
 | Unsupported HTTP method | 405 |
 | `ConflictException` | 409 |
 | Unsupported `Content-Type` | 415 |
+| Database lock not acquired in time (`PessimisticLockingFailureException`) | 503 |
 | Any other exception | 500, message `Unexpected error` with no internal details; the stack trace is logged |
 
 Services signal business errors by throwing a subclass of `ApiException`: `NotFoundException.of("Order", id)`, `ConflictException` or `BadRequestException`. Controllers never build error responses themselves.

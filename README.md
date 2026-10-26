@@ -127,6 +127,8 @@ A sample temple with id `1` is created by the first migration, so you can call t
 | POST | `/api/temples/{templeId}/orders` | Place an order; the server calculates the total | 201 | 400, 404, 409, 422 |
 | GET | `/api/temples/{templeId}/orders` | Search orders in pages (see below) | 200 | 400, 404 |
 | GET | `/api/orders/{orderId}` | Get an order by id | 200 | 404 |
+| POST | `/api/orders/{orderId}/cancel` | Cancel an order | 200 | 400, 404, 409 |
+| GET | `/api/temples/{templeId}/reports/daily-collection?date=` | Daily collection report (see below) | 200 | 400, 404 |
 
 Each PR adds its endpoints to this table and to Swagger.
 
@@ -155,6 +157,29 @@ curl -X POST http://localhost:8080/api/temples/1/orders   -H "Content-Type: appl
 - The response holds `content` (order summaries without line items), `page`, `size`, `totalElements` and `totalPages`. Use `GET /api/orders/{orderId}` for the full order.
 - Indexes on `(temple_id, booking_date, id)`, `(temple_id, phone, id)` and `(temple_id, status, id)` keep these searches off a full table scan (migration `V2`); the unfiltered list uses the foreign-key index on `temple_id`.
 
+### Daily collection report
+
+`GET /api/temples/{templeId}/reports/daily-collection?date=2026-12-01`
+
+```json
+{
+  "templeId": 1,
+  "date": "2026-12-01",
+  "totalAmount": 110.00,
+  "offerings": [
+    {"offeringId": 1, "offeringName": "Pushpanjali", "quantity": 2, "orderCount": 1, "totalAmount": 60.00},
+    {"offeringId": 2, "offeringName": "Archana", "quantity": 1, "orderCount": 1, "totalAmount": 50.00}
+  ]
+}
+```
+
+- Counts orders **placed** on `date` in Indian Standard Time: from 00:00 IST (inclusive) to the next 00:00 IST (exclusive). An order placed at 00:15 IST is counted on that date.
+- Cancelled orders are left out.
+- Per offering: `quantity` is the number of rituals booked, `orderCount` the number of orders containing it, `totalAmount` the sum of the booked line totals (the price at booking time).
+- Offerings with no orders that day are not listed; a day with no orders returns `totalAmount` `0.00` and an empty list.
+- Amounts are summed as exact decimals (`DECIMAL` in the database, `BigDecimal` in Java), never floating point, so they match to the paisa. `totalAmount` is the sum of the offerings' totals.
+- The index on `(temple_id, created_at)` (migration `V4`) keeps the report off a full table scan.
+
 ### Business rules
 
 | Rule | Behaviour |
@@ -165,6 +190,9 @@ curl -X POST http://localhost:8080/api/temples/1/orders   -H "Content-Type: appl
 | Daily limit | Optional `dailyLimit` on an offering (a positive number, or omit for no limit). An order that would take that offering's booked quantity for the booking date over the limit is rejected with 409, and the message says how many are left |
 | Simultaneous orders | Placing an order locks the ordered offerings' rows until it commits, so online and counter orders for the same offering are checked one at a time and the limit always holds. If a lock can't be taken within 10 seconds the order gets 503 and can be retried |
 | Updating an offering | `PUT` replaces the whole offering: leaving out `dailyLimit` removes the limit. Lowering a limit below what is already booked only affects new orders |
+| Report date | Must be in the years 2000–9999; otherwise 400 |
+| Cancelling an order | Only a `BOOKED` order can be cancelled; cancelling again returns 409. Orders for past dates can be cancelled too. The order row is locked while cancelling, so two simultaneous cancels give one 200 and one 409 |
+| Cancelled order and daily limit | A cancelled order's quantities no longer count towards the daily limit, so they can be booked again |
 | Offering from another temple, or unknown | 404 |
 | Same offering twice in one order | 400; send one line with a higher quantity instead |
 | Booking date | Today or later, in Indian Standard Time; a past date returns 400 |
@@ -246,5 +274,5 @@ Services signal business errors by throwing a subclass of `ApiException`: `NotFo
 |---|---|---|
 | P1 – Offerings and Orders API | `feature/p1-offerings` | [#5](https://github.com/sharok23/tdb-vazhipadu-backend/pull/5) |
 | P2 – Order Search | `feature/p2-order-search` | [#6](https://github.com/sharok23/tdb-vazhipadu-backend/pull/6) |
-| P3 – Daily Limits | `feature/p3-daily-limits` | _pending_ |
+| P3 – Daily Limits | `feature/p3-daily-limits` | [#7](https://github.com/sharok23/tdb-vazhipadu-backend/pull/7) |
 | P4 – Cancellation and Daily Collection | `feature/p4-cancellation-report` | _pending_ |

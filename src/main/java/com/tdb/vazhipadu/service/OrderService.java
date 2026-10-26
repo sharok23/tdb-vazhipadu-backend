@@ -60,6 +60,17 @@ public class OrderService {
         return OrderResponse.from(orderRepository.save(order));
     }
 
+    @Transactional
+    public OrderResponse cancel(Long orderId) {
+        Order order = orderRepository.findByIdForUpdate(orderId)
+                .orElseThrow(() -> NotFoundException.of("Order", orderId));
+        if (order.getStatus() == OrderStatus.CANCELLED) {
+            throw new ConflictException("Order %d is already cancelled".formatted(orderId));
+        }
+        order.cancel();
+        return OrderResponse.from(order);
+    }
+
     @Transactional(readOnly = true)
     public OrderResponse get(Long orderId) {
         return orderRepository.findById(orderId)

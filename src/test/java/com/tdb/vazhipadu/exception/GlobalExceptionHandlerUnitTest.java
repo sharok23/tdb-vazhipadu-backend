@@ -116,6 +116,6 @@ class GlobalExceptionHandlerUnitTest {
                 handler.handleLockTimeout(new PessimisticLockingFailureException("timeout"), request);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.SERVICE_UNAVAILABLE);
-        assertThat(response.getBody().message()).isEqualTo("Offering is busy with other orders, please retry");
+        assertThat(response.getBody().message()).isEqualTo("Resource is busy with other requests, please retry");
     }
 }

@@ -30,7 +30,7 @@ import jakarta.validation.constraints.Pattern;
 
 @RestController
 @RequestMapping("/api")
-@Tag(name = "Orders", description = "Place and view vazhipadu orders")
+@Tag(name = "Orders", description = "Place, view and cancel vazhipadu orders")
 public class OrderController {
 
     private final OrderService orderService;
@@ -65,6 +65,17 @@ public class OrderController {
             @RequestParam(defaultValue = "0") @Min(0) int page,
             @RequestParam(defaultValue = "20") @Min(1) @Max(100) int size) {
         return orderService.search(templeId, date, status, phone, page, size);
+    }
+
+    @PostMapping("/orders/{orderId}/cancel")
+    @Operation(summary = "Cancel an order; its quantities no longer count towards daily limits")
+    @ApiResponse(responseCode = "200", description = "Order cancelled")
+    @ApiResponse(responseCode = "400", description = "Order id is not a number")
+    @ApiResponse(responseCode = "404", description = "Order not found")
+    @ApiResponse(responseCode = "409", description = "Order is already cancelled")
+    @ApiResponse(responseCode = "503", description = "Order is busy with another request; retry")
+    public OrderResponse cancel(@PathVariable Long orderId) {
+        return orderService.cancel(orderId);
     }
 
     @GetMapping("/orders/{orderId}")

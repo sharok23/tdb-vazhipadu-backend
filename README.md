@@ -246,5 +246,5 @@ Services signal business errors by throwing a subclass of `ApiException`: `NotFo
 |---|---|---|
 | P1 – Offerings and Orders API | `feature/p1-offerings` | [#5](https://github.com/sharok23/tdb-vazhipadu-backend/pull/5) |
 | P2 – Order Search | `feature/p2-order-search` | [#6](https://github.com/sharok23/tdb-vazhipadu-backend/pull/6) |
-| P3 – Daily Limits | `feature/p3-daily-limits` | _pending_ |
+| P3 – Daily Limits | `feature/p3-daily-limits` | [#7](https://github.com/sharok23/tdb-vazhipadu-backend/pull/7) |
 | P4 – Cancellation and Daily Collection | `feature/p4-cancellation-report` | _pending_ |

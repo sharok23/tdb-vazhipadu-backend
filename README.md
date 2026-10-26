@@ -117,10 +117,41 @@ Other files in the repository root:
 
 ## Endpoints
 
+A sample temple with id `1` is created by the first migration, so you can call the endpoints straight away.
+
 | Method | Path | Description | Success | Errors |
 |---|---|---|---|---|
+| POST | `/api/temples/{templeId}/offerings` | Add an offering (name, price, active) | 201 | 400, 404, 409 |
+| GET | `/api/temples/{templeId}/offerings` | List a temple's offerings, including inactive ones | 200 | 404 |
+| PUT | `/api/temples/{templeId}/offerings/{offeringId}` | Update an offering | 200 | 400, 404, 409 |
+| POST | `/api/temples/{templeId}/orders` | Place an order; the server calculates the total | 201 | 400, 404, 422 |
+| GET | `/api/orders/{orderId}` | Get an order by id | 200 | 404 |
 
 Each PR adds its endpoints to this table and to Swagger.
+
+### Example: place an order
+
+```bash
+curl -X POST http://localhost:8080/api/temples/1/offerings   -H "Content-Type: application/json"   -d '{"name":"Pushpanjali","price":30.00,"active":true}'
+
+curl -X POST http://localhost:8080/api/temples/1/orders   -H "Content-Type: application/json"   -d '{"devoteeName":"Lakshmi","phone":"9876543210","nakshatra":"ROHINI",
+       "bookingDate":"2026-12-01","items":[{"offeringId":1,"quantity":2}]}'
+```
+
+### Business rules
+
+| Rule | Behaviour |
+|---|---|
+| Order total | Calculated on the server as the sum of price × quantity; any total sent by the client is ignored |
+| Price on the order | Each order line keeps the price at the time of booking, so later price changes don't alter old orders |
+| Inactive offering | Order rejected with 422 |
+| Offering from another temple, or unknown | 404 |
+| Same offering twice in one order | 400; send one line with a higher quantity instead |
+| Booking date | Today or later, in Indian Standard Time; a past date returns 400 |
+| Phone | 10-digit Indian mobile number starting with 6–9 |
+| Nakshatra | One of the 27 birth stars, for example `ASHWATHI`, `ROHINI`, `REVATHI` (see `constant/Nakshatra.java`) |
+| Offering name | Unique per temple, ignoring case; a duplicate returns 409 |
+| Limits | Price up to 8 digits with 2 decimals; quantity 1–100; up to 20 lines per order |
 
 ## Error format
 

@@ -29,6 +29,6 @@ class OrderLineIndexTest {
                 ORDER BY ORDINAL_POSITION
                 """, String.class, index);
 
-        assertThat(String.join(",", actual)).isEqualTo(columns);
+        assertThat(actual).containsExactly(columns.split(","));
     }
 }

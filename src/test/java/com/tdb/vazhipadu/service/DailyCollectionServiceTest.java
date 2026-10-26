@@ -13,6 +13,8 @@ import java.util.List;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -20,6 +22,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import com.tdb.vazhipadu.constant.OrderStatus;
 import com.tdb.vazhipadu.contract.response.DailyCollectionResponse;
 import com.tdb.vazhipadu.contract.response.OfferingCollectionResponse;
+import com.tdb.vazhipadu.exception.BadRequestException;
 import com.tdb.vazhipadu.exception.NotFoundException;
 import com.tdb.vazhipadu.repository.OrderRepository;
 
@@ -58,6 +61,15 @@ class DailyCollectionServiceTest {
 
         assertThat(report.totalAmount()).isEqualTo(new BigDecimal("0.00"));
         assertThat(report.offerings()).isEmpty();
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"1999-12-31", "+10000-01-01"})
+    void reportRejectsDateOutsideSupportedYears(String date) {
+        assertThatThrownBy(() -> service.report(1L, LocalDate.parse(date)))
+                .isInstanceOf(BadRequestException.class)
+                .hasMessage("Date must be between 2000 and 9999");
+        verifyNoInteractions(orderRepository);
     }
 
     @Test

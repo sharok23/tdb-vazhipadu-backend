@@ -114,7 +114,7 @@ class ReportControllerTest {
 
     @Test
     void dayWithoutOrdersHasZeroTotal() throws Exception {
-        report("2000-01-01")
+        report("2000-01-02")
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("\"totalAmount\":0.00,")))
                 .andExpect(jsonPath("$.offerings").isEmpty());
@@ -125,6 +125,13 @@ class ReportControllerTest {
         mockMvc.perform(get(REPORT, 999).param("date", "2020-01-01"))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.message").value("Temple not found with id: 999"));
+    }
+
+    @Test
+    void reportReturns400ForFarFutureDate() throws Exception {
+        report("+999999999-12-31")
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("Date must be between 2000 and 9999"));
     }
 
     @Test

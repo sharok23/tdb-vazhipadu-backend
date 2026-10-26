@@ -12,10 +12,14 @@ import com.tdb.vazhipadu.constant.OrderStatus;
 import com.tdb.vazhipadu.constant.TimeZones;
 import com.tdb.vazhipadu.contract.response.DailyCollectionResponse;
 import com.tdb.vazhipadu.contract.response.OfferingCollectionResponse;
+import com.tdb.vazhipadu.exception.BadRequestException;
 import com.tdb.vazhipadu.repository.OrderRepository;
 
 @Service
 public class DailyCollectionService {
+
+    private static final int MIN_YEAR = 2000;
+    private static final int MAX_YEAR = 9999;
 
     private final OrderRepository orderRepository;
     private final TempleGuard templeGuard;
@@ -28,6 +32,9 @@ public class DailyCollectionService {
     @Transactional(readOnly = true)
     public DailyCollectionResponse report(Long templeId, LocalDate date) {
         templeGuard.requireExists(templeId);
+        if (date.getYear() < MIN_YEAR || date.getYear() > MAX_YEAR) {
+            throw new BadRequestException("Date must be between %d and %d".formatted(MIN_YEAR, MAX_YEAR));
+        }
         Instant from = date.atStartOfDay(TimeZones.IST).toInstant();
         Instant to = date.plusDays(1).atStartOfDay(TimeZones.IST).toInstant();
         List<OfferingCollectionResponse> offerings =

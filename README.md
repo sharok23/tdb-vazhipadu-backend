@@ -190,6 +190,7 @@ curl -X POST http://localhost:8080/api/temples/1/orders   -H "Content-Type: appl
 | Daily limit | Optional `dailyLimit` on an offering (a positive number, or omit for no limit). An order that would take that offering's booked quantity for the booking date over the limit is rejected with 409, and the message says how many are left |
 | Simultaneous orders | Placing an order locks the ordered offerings' rows until it commits, so online and counter orders for the same offering are checked one at a time and the limit always holds. If a lock can't be taken within 10 seconds the order gets 503 and can be retried |
 | Updating an offering | `PUT` replaces the whole offering: leaving out `dailyLimit` removes the limit. Lowering a limit below what is already booked only affects new orders |
+| Report date | Must be in the years 2000–9999; otherwise 400 |
 | Cancelling an order | Only a `BOOKED` order can be cancelled; cancelling again returns 409. Orders for past dates can be cancelled too. The order row is locked while cancelling, so two simultaneous cancels give one 200 and one 409 |
 | Cancelled order and daily limit | A cancelled order's quantities no longer count towards the daily limit, so they can be booked again |
 | Offering from another temple, or unknown | 404 |

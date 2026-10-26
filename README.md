@@ -188,7 +188,7 @@ curl -X POST http://localhost:8080/api/temples/1/orders   -H "Content-Type: appl
 | Price on the order | Each order line keeps the price at the time of booking, so later price changes don't alter old orders |
 | Inactive offering | Order rejected with 422 |
 | Daily limit | Optional `dailyLimit` on an offering (a positive number, or omit for no limit). An order that would take that offering's booked quantity for the booking date over the limit is rejected with 409, and the message says how many are left |
-| Simultaneous orders | Placing an order locks the ordered offerings' rows until it commits, so online and counter orders for the same offering are checked one at a time and the limit always holds. If a lock can't be taken within 10 seconds the order gets 503 and can be retried |
+| Simultaneous orders | Placing an order locks the ordered offerings' rows until it commits, so online and counter orders for the same offering are checked one at a time and the limit always holds. If a lock can't be taken within 10 seconds the order gets 503 and can be retried. The booked-quantity sum uses the index on `order_line (offering_id, order_id)` (migration `V5`) |
 | Updating an offering | `PUT` replaces the whole offering: leaving out `dailyLimit` removes the limit. Lowering a limit below what is already booked only affects new orders |
 | Report date | Must be in the years 2000–9999; otherwise 400 |
 | Cancelling an order | Only a `BOOKED` order can be cancelled; cancelling again returns 409. Orders for past dates can be cancelled too. The order row is locked while cancelling, so two simultaneous cancels give one 200 and one 409 |
@@ -235,10 +235,11 @@ All errors, including validation errors, unknown URLs and server errors, return 
 | Malformed or missing JSON body | 400 |
 | Wrong parameter type (for example `abc` for a number) | 400 |
 | Missing required query parameter | 400 |
-| `BadRequestException`, `IllegalArgumentException` | 400 |
+| `BadRequestException` | 400 |
 | `NotFoundException`, unknown URL | 404 |
 | Unsupported HTTP method | 405 |
-| `ConflictException` | 409 |
+| `ConflictException`, data integrity violation | 409 |
+| `UnprocessableEntityException` (inactive offering) | 422 |
 | Unsupported `Content-Type` | 415 |
 | Database lock not acquired in time (`PessimisticLockingFailureException`) | 503 |
 | Any other exception | 500, message `Unexpected error` with no internal details; the stack trace is logged |
@@ -276,3 +277,4 @@ Services signal business errors by throwing a subclass of `ApiException`: `NotFo
 | P2 – Order Search | `feature/p2-order-search` | [#6](https://github.com/sharok23/tdb-vazhipadu-backend/pull/6) |
 | P3 – Daily Limits | `feature/p3-daily-limits` | [#7](https://github.com/sharok23/tdb-vazhipadu-backend/pull/7) |
 | P4 – Cancellation and Daily Collection | `feature/p4-cancellation-report` | [#8](https://github.com/sharok23/tdb-vazhipadu-backend/pull/8) |
+| Review fixes: order line indexes, no catch-all 400 | `feature/review-fixes` | [#10](https://github.com/sharok23/tdb-vazhipadu-backend/pull/10) |

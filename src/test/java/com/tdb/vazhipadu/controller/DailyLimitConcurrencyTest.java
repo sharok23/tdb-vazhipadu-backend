@@ -41,15 +41,18 @@ class DailyLimitConcurrencyTest {
                  "items":[{"offeringId":%d,"quantity":1}]}
                 """.formatted(LocalDate.now(TimeZones.IST).plusDays(5), offeringId);
 
+        CountDownLatch ready = new CountDownLatch(REQUESTS);
         CountDownLatch start = new CountDownLatch(1);
         List<Future<HttpStatusCode>> results = new ArrayList<>();
         try (ExecutorService pool = Executors.newFixedThreadPool(REQUESTS)) {
             for (int i = 0; i < REQUESTS; i++) {
                 results.add(pool.submit(() -> {
+                    ready.countDown();
                     start.await();
                     return rest.postForEntity("/api/temples/1/orders", json(order), String.class).getStatusCode();
                 }));
             }
+            ready.await();
             start.countDown();
         }
 

@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -22,6 +23,11 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import com.tdb.vazhipadu.constant.Nakshatra;
@@ -30,6 +36,8 @@ import com.tdb.vazhipadu.constant.TimeZones;
 import com.tdb.vazhipadu.contract.request.OrderItemRequest;
 import com.tdb.vazhipadu.contract.request.OrderRequest;
 import com.tdb.vazhipadu.contract.response.OrderResponse;
+import com.tdb.vazhipadu.contract.response.OrderSummaryResponse;
+import com.tdb.vazhipadu.contract.response.PageResponse;
 import com.tdb.vazhipadu.exception.BadRequestException;
 import com.tdb.vazhipadu.exception.NotFoundException;
 import com.tdb.vazhipadu.exception.UnprocessableEntityException;
@@ -149,6 +157,32 @@ class OrderServiceTest {
         assertThatThrownBy(() -> orderService.get(5L))
                 .isInstanceOf(NotFoundException.class)
                 .hasMessage("Order not found with id: 5");
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void searchReturnsPageSortedById() {
+        Order order = new Order(TEMPLE_ID, "Lakshmi", "9876543210", Nakshatra.ROHINI, TODAY, NOW);
+        Pageable expected = PageRequest.of(1, 2, Sort.by("id"));
+        when(orderRepository.findAll(any(Specification.class), eq(expected)))
+                .thenReturn(new PageImpl<>(List.of(order), expected, 3));
+
+        PageResponse<OrderSummaryResponse> page =
+                orderService.search(TEMPLE_ID, TODAY, OrderStatus.BOOKED, "9876543210", 1, 2);
+
+        assertThat(page.content()).extracting(OrderSummaryResponse::phone).containsExactly("9876543210");
+        assertThat(page.page()).isEqualTo(1);
+        assertThat(page.size()).isEqualTo(2);
+        assertThat(page.totalElements()).isEqualTo(3);
+        assertThat(page.totalPages()).isEqualTo(2);
+    }
+
+    @Test
+    void searchRejectsUnknownTemple() {
+        doThrow(NotFoundException.of("Temple", 9L)).when(templeGuard).requireExists(9L);
+
+        assertThatThrownBy(() -> orderService.search(9L, null, null, null, 0, 20))
+                .isInstanceOf(NotFoundException.class);
     }
 
     private static OrderRequest request(LocalDate date, OrderItemRequest... items) {

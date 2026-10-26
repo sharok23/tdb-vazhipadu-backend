@@ -80,11 +80,6 @@ public class GlobalExceptionHandler {
                 "Missing required parameter '%s'".formatted(ex.getParameterName()), req);
     }
 
-    @ExceptionHandler(IllegalArgumentException.class)
-    ResponseEntity<ErrorResponse> handleIllegalArgument(IllegalArgumentException ex, HttpServletRequest req) {
-        return respond(HttpStatus.BAD_REQUEST, ex.getMessage(), req);
-    }
-
     @ExceptionHandler(DataIntegrityViolationException.class)
     ResponseEntity<ErrorResponse> handleDataIntegrity(DataIntegrityViolationException ex, HttpServletRequest req) {
         log.warn("Data integrity violation on {} {}: {}", req.getMethod(), req.getRequestURI(),

@@ -75,15 +75,6 @@ class GlobalExceptionHandlerUnitTest {
     }
 
     @Test
-    void illegalArgumentReturns400WithMessage() {
-        ResponseEntity<ErrorResponse> response =
-                handler.handleIllegalArgument(new IllegalArgumentException("page must be >= 0"), request);
-
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
-        assertThat(response.getBody().message()).isEqualTo("page must be >= 0");
-    }
-
-    @Test
     void unknownResourceReturns404NamingMethodAndPath() {
         ResponseEntity<ErrorResponse> response = handler.handleNoResource(request);
 

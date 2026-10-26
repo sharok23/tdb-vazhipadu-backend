@@ -220,6 +220,33 @@ class OrderServiceTest {
                 .hasMessageContaining("0 of 5 left");
     }
 
+    @Test
+    void cancelMarksOrderCancelled() {
+        Order order = new Order(TEMPLE_ID, "Lakshmi", "9876543210", Nakshatra.ROHINI, TODAY, NOW);
+        when(orderRepository.findByIdForUpdate(5L)).thenReturn(Optional.of(order));
+
+        assertThat(orderService.cancel(5L).status()).isEqualTo(OrderStatus.CANCELLED);
+        assertThat(order.getStatus()).isEqualTo(OrderStatus.CANCELLED);
+    }
+
+    @Test
+    void cancelThrowsConflictWhenAlreadyCancelled() {
+        Order order = new Order(TEMPLE_ID, "Lakshmi", "9876543210", Nakshatra.ROHINI, TODAY, NOW);
+        order.cancel();
+        when(orderRepository.findByIdForUpdate(5L)).thenReturn(Optional.of(order));
+
+        assertThatThrownBy(() -> orderService.cancel(5L))
+                .isInstanceOf(ConflictException.class)
+                .hasMessage("Order 5 is already cancelled");
+    }
+
+    @Test
+    void cancelThrowsNotFoundForUnknownOrder() {
+        when(orderRepository.findByIdForUpdate(99L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> orderService.cancel(99L)).isInstanceOf(NotFoundException.class);
+    }
+
     private static Offering limitedOffering(Long id, int dailyLimit) {
         Offering offering = new Offering(TEMPLE_ID, "Udayasthamana Pooja", new BigDecimal("100.00"), true, dailyLimit);
         ReflectionTestUtils.setField(offering, "id", id);

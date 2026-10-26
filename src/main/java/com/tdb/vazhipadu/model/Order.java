@@ -85,6 +85,10 @@ public class Order {
         totalAmount = totalAmount.add(line.getLineTotal());
     }
 
+    public void cancel() {
+        status = OrderStatus.CANCELLED;
+    }
+
     public Long getId() {
         return id;
     }

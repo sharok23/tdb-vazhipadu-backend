@@ -239,12 +239,12 @@ All errors, including validation errors, unknown URLs and server errors, return 
 | `NotFoundException`, unknown URL | 404 |
 | Unsupported HTTP method | 405 |
 | `ConflictException`, data integrity violation | 409 |
-| `UnprocessableEntityException` (inactive offering) | 422 |
 | Unsupported `Content-Type` | 415 |
+| `UnprocessableEntityException` (inactive offering) | 422 |
 | Database lock not acquired in time (`PessimisticLockingFailureException`) | 503 |
 | Any other exception | 500, message `Unexpected error` with no internal details; the stack trace is logged |
 
-Services signal business errors by throwing a subclass of `ApiException`: `NotFoundException.of("Order", id)`, `ConflictException` or `BadRequestException`. Controllers never build error responses themselves.
+Services signal business errors by throwing a subclass of `ApiException`: `NotFoundException.of("Order", id)`, `ConflictException`, `UnprocessableEntityException` or `BadRequestException`. Controllers never build error responses themselves.
 
 ## Database and migrations
 

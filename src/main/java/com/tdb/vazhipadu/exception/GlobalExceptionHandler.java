@@ -96,7 +96,7 @@ public class GlobalExceptionHandler {
     ResponseEntity<ErrorResponse> handleLockTimeout(PessimisticLockingFailureException ex, HttpServletRequest req) {
         log.warn("Lock not acquired on {} {}: {}", req.getMethod(), req.getRequestURI(),
                 ex.getMostSpecificCause().getMessage());
-        return respond(HttpStatus.SERVICE_UNAVAILABLE, "Offering is busy with other orders, please retry", req);
+        return respond(HttpStatus.SERVICE_UNAVAILABLE, "Resource is busy with other requests, please retry", req);
     }
 
     @ExceptionHandler(NoResourceFoundException.class)

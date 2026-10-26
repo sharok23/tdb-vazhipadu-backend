@@ -70,21 +70,22 @@ class OfferingServiceTest {
     @Test
     void listMapsOfferings() {
         when(offeringRepository.findByTempleIdOrderById(TEMPLE_ID))
-                .thenReturn(List.of(new Offering(TEMPLE_ID, "Archana", new BigDecimal("50.00"), true)));
+                .thenReturn(List.of(new Offering(TEMPLE_ID, "Archana", new BigDecimal("50.00"), true, null)));
 
         assertThat(offeringService.list(TEMPLE_ID)).extracting(OfferingResponse::name).containsExactly("Archana");
     }
 
     @Test
     void updateChangesFields() {
-        Offering offering = new Offering(TEMPLE_ID, "Archana", new BigDecimal("50.00"), true);
+        Offering offering = new Offering(TEMPLE_ID, "Archana", new BigDecimal("50.00"), true, null);
         when(offeringRepository.findByIdAndTempleId(3L, TEMPLE_ID)).thenReturn(Optional.of(offering));
 
         OfferingResponse response = offeringService.update(TEMPLE_ID, 3L,
-                new OfferingRequest("Archana", new BigDecimal("60.00"), false));
+                new OfferingRequest("Archana", new BigDecimal("60.00"), false, 50));
 
         assertThat(response.price()).isEqualByComparingTo("60.00");
         assertThat(response.active()).isFalse();
+        assertThat(response.dailyLimit()).isEqualTo(50);
     }
 
     @Test
@@ -98,7 +99,7 @@ class OfferingServiceTest {
 
     @Test
     void updateRejectsNameUsedByAnotherOffering() {
-        Offering offering = new Offering(TEMPLE_ID, "Archana", new BigDecimal("50.00"), true);
+        Offering offering = new Offering(TEMPLE_ID, "Archana", new BigDecimal("50.00"), true, null);
         when(offeringRepository.findByIdAndTempleId(3L, TEMPLE_ID)).thenReturn(Optional.of(offering));
         when(offeringRepository.existsByTempleIdAndNameIgnoreCaseAndIdNot(TEMPLE_ID, "Pushpanjali", 3L))
                 .thenReturn(true);
@@ -108,6 +109,6 @@ class OfferingServiceTest {
     }
 
     private static OfferingRequest request(String name) {
-        return new OfferingRequest(name, new BigDecimal("50.00"), true);
+        return new OfferingRequest(name, new BigDecimal("50.00"), true, null);
     }
 }

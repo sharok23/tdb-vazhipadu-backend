@@ -29,18 +29,22 @@ public class Offering {
     @Column(nullable = false)
     private boolean active;
 
+    @Column(name = "daily_limit")
+    private Integer dailyLimit;
+
     protected Offering() {
     }
 
-    public Offering(Long templeId, String name, BigDecimal price, boolean active) {
+    public Offering(Long templeId, String name, BigDecimal price, boolean active, Integer dailyLimit) {
         this.templeId = templeId;
-        update(name, price, active);
+        update(name, price, active, dailyLimit);
     }
 
-    public final void update(String name, BigDecimal price, boolean active) {
+    public final void update(String name, BigDecimal price, boolean active, Integer dailyLimit) {
         this.name = name;
         this.price = price;
         this.active = active;
+        this.dailyLimit = dailyLimit;
     }
 
     public Long getId() {
@@ -61,5 +65,9 @@ public class Offering {
 
     public boolean isActive() {
         return active;
+    }
+
+    public Integer getDailyLimit() {
+        return dailyLimit;
     }
 }

@@ -19,10 +19,10 @@ class OfferingRepositoryTest {
 
     @Test
     void databaseRejectsSameNameInDifferentCaseForOneTemple() {
-        offeringRepository.saveAndFlush(new Offering(1L, "Archana", new BigDecimal("50.00"), true));
+        offeringRepository.saveAndFlush(new Offering(1L, "Archana", new BigDecimal("50.00"), true, null));
 
         assertThatThrownBy(() ->
-                offeringRepository.saveAndFlush(new Offering(1L, "archana", new BigDecimal("60.00"), true)))
+                offeringRepository.saveAndFlush(new Offering(1L, "archana", new BigDecimal("60.00"), true, null)))
                 .isInstanceOf(DataIntegrityViolationException.class);
     }
 }

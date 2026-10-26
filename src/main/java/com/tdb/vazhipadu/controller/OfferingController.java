@@ -54,7 +54,7 @@ public class OfferingController {
     }
 
     @PutMapping("/{offeringId}")
-    @Operation(summary = "Update an offering's name, price and active flag")
+    @Operation(summary = "Replace an offering's name, price, active flag and daily limit")
     @ApiResponse(responseCode = "200", description = "Offering updated")
     @ApiResponse(responseCode = "400", description = "Invalid input")
     @ApiResponse(responseCode = "404", description = "Offering not found for this temple")

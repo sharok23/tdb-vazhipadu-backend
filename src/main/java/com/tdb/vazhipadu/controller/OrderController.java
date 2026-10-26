@@ -44,7 +44,9 @@ public class OrderController {
     @ApiResponse(responseCode = "201", description = "Order placed")
     @ApiResponse(responseCode = "400", description = "Invalid input or past booking date")
     @ApiResponse(responseCode = "404", description = "Temple or offering not found")
+    @ApiResponse(responseCode = "409", description = "Daily limit for an offering would be exceeded")
     @ApiResponse(responseCode = "422", description = "Offering is not active")
+    @ApiResponse(responseCode = "503", description = "Offering is busy with other orders; retry")
     public ResponseEntity<OrderResponse> place(@PathVariable Long templeId, @Valid @RequestBody OrderRequest request) {
         OrderResponse placed = orderService.place(templeId, request);
         return ResponseEntity.created(URI.create("/api/orders/" + placed.id())).body(placed);

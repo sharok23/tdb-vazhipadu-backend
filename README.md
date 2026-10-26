@@ -71,7 +71,7 @@ Settings live in `src/main/resources/application.properties`. You can override d
 
 | Variable | Default | Purpose |
 |---|---|---|
-| `DB_URL` | `jdbc:h2:mem:vazhipadu;DB_CLOSE_DELAY=-1` | JDBC URL of the database |
+| `DB_URL` | `jdbc:h2:mem:vazhipadu;DB_CLOSE_DELAY=-1;LOCK_TIMEOUT=10000` | JDBC URL of the database |
 | `DB_USERNAME` | `sa` | Database user |
 | `DB_PASSWORD` | empty | Database password |
 
@@ -121,10 +121,10 @@ A sample temple with id `1` is created by the first migration, so you can call t
 
 | Method | Path | Description | Success | Errors |
 |---|---|---|---|---|
-| POST | `/api/temples/{templeId}/offerings` | Add an offering (name, price, active) | 201 | 400, 404, 409 |
+| POST | `/api/temples/{templeId}/offerings` | Add an offering (name, price, active, optional daily limit) | 201 | 400, 404, 409 |
 | GET | `/api/temples/{templeId}/offerings` | List a temple's offerings, including inactive ones | 200 | 404 |
 | PUT | `/api/temples/{templeId}/offerings/{offeringId}` | Update an offering | 200 | 400, 404, 409 |
-| POST | `/api/temples/{templeId}/orders` | Place an order; the server calculates the total | 201 | 400, 404, 422 |
+| POST | `/api/temples/{templeId}/orders` | Place an order; the server calculates the total | 201 | 400, 404, 409, 422 |
 | GET | `/api/temples/{templeId}/orders` | Search orders in pages (see below) | 200 | 400, 404 |
 | GET | `/api/orders/{orderId}` | Get an order by id | 200 | 404 |
 
@@ -162,6 +162,9 @@ curl -X POST http://localhost:8080/api/temples/1/orders   -H "Content-Type: appl
 | Order total | Calculated on the server as the sum of price × quantity; any total sent by the client is ignored |
 | Price on the order | Each order line keeps the price at the time of booking, so later price changes don't alter old orders |
 | Inactive offering | Order rejected with 422 |
+| Daily limit | Optional `dailyLimit` on an offering (a positive number, or omit for no limit). An order that would take that offering's booked quantity for the booking date over the limit is rejected with 409, and the message says how many are left |
+| Simultaneous orders | Placing an order locks the ordered offerings' rows until it commits, so online and counter orders for the same offering are checked one at a time and the limit always holds. If a lock can't be taken within 10 seconds the order gets 503 and can be retried |
+| Updating an offering | `PUT` replaces the whole offering: leaving out `dailyLimit` removes the limit. Lowering a limit below what is already booked only affects new orders |
 | Offering from another temple, or unknown | 404 |
 | Same offering twice in one order | 400; send one line with a higher quantity instead |
 | Booking date | Today or later, in Indian Standard Time; a past date returns 400 |
@@ -209,6 +212,7 @@ All errors, including validation errors, unknown URLs and server errors, return 
 | Unsupported HTTP method | 405 |
 | `ConflictException` | 409 |
 | Unsupported `Content-Type` | 415 |
+| Database lock not acquired in time (`PessimisticLockingFailureException`) | 503 |
 | Any other exception | 500, message `Unexpected error` with no internal details; the stack trace is logged |
 
 Services signal business errors by throwing a subclass of `ApiException`: `NotFoundException.of("Order", id)`, `ConflictException` or `BadRequestException`. Controllers never build error responses themselves.
@@ -241,6 +245,6 @@ Services signal business errors by throwing a subclass of `ApiException`: `NotFo
 | Problem | Branch | PR |
 |---|---|---|
 | P1 – Offerings and Orders API | `feature/p1-offerings` | [#5](https://github.com/sharok23/tdb-vazhipadu-backend/pull/5) |
-| P2 – Order Search | `feature/p2-order-search` | _pending_ |
+| P2 – Order Search | `feature/p2-order-search` | [#6](https://github.com/sharok23/tdb-vazhipadu-backend/pull/6) |
 | P3 – Daily Limits | `feature/p3-daily-limits` | _pending_ |
 | P4 – Cancellation and Daily Collection | `feature/p4-cancellation-report` | _pending_ |
